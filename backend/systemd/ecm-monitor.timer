@@ -1,0 +1,14 @@
+[Unit]
+Description=ECM Tunnel Monitor Timer (Every 5 minutes)
+Requires=ecm-monitor.service
+
+[Timer]
+# 5分ごとに実行
+OnBootSec=5min
+OnUnitActiveSec=5min
+
+# タイマーの精度（省電力のため少し緩く）
+AccuracySec=1min
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,423 @@
+# 🚀 ラズパイ移行チェックリスト
+
+## 📅 事前準備（Windows環境で）
+
+### ✅ 1. 設定ファイルの編集
+
+**ファイル:** `backend/scripts/system_config.py`
+
+```python
+# 以下の項目を実際の値に変更
+
+# パス設定（ラズパイでの実際のパスに変更）
+APP_DIR = "/home/pi/ecm/backend"
+BACKUP_DIR = "/mnt/usb_backup/ecm"
+
+# メール設定
+SENDER_EMAIL = "あなたのGmail@gmail.com"
+SENDER_PASSWORD = "Googleアプリパスワード16桁"
+RECIPIENT_EMAILS = [
+    "通知先1@example.com",
+    "通知先2@example.com"
+]
+
+# Cloudflare Tunnel URL（移行後に設定）
+TUNNEL_URL = "https://your-tunnel-url.trycloudflare.com"
+```
+
+**重要:** Googleアプリパスワードの取得方法
+1. Googleアカウントにログイン
+2. https://myaccount.google.com/security にアクセス
+3. 「2段階認証プロセス」を有効化
+4. 「アプリパスワード」を検索
+5. 「その他（カスタム名）」で「ECM」を入力
+6. 生成された16桁のパスワードをコピー
+
+---
+
+### ✅ 2. GitHubリポジトリ作成（推奨）
+
+```bash
+# Windows環境で
+cd C:\Users\yagin\Desktop\ecm
+
+# Gitリポジトリ初期化
+git init
+git add .
+git commit -m "Initial commit"
+
+# GitHubにプッシュ
+git remote add origin https://github.com/あなたのアカウント/ecm.git
+git push -u origin main
+```
+
+**メリット:**
+- ラズパイへの転送が簡単
+- バージョン管理
+- 予備機へのデプロイも楽
+
+---
+
+## 🔧 ラズパイ側の作業
+
+### ✅ 1. 基本セットアップ
+
+```bash
+# システム更新
+sudo apt update
+sudo apt upgrade -y
+
+# 必要なパッケージ
+sudo apt install -y python3 python3-pip python3-venv git sqlite3
+```
+
+---
+
+### ✅ 2. USBドライブ設定
+
+```bash
+# USBを挿してデバイス名確認
+lsblk
+
+# 出力例:
+# NAME   MAJ:MIN RM  SIZE RO TYPE MOUNTPOINT
+# sda      8:0    1 59.5G  0 disk
+# └─sda1   8:1    1 59.5G  0 part
+
+# マウントポイント作成
+sudo mkdir -p /mnt/usb_backup
+
+# 一時マウント
+sudo mount /dev/sda1 /mnt/usb_backup
+
+# 自動マウント設定
+sudo nano /etc/fstab
+
+# 以下を最終行に追加:
+/dev/sda1  /mnt/usb_backup  auto  defaults,nofail  0  2
+
+# 保存: Ctrl+O → Enter → Ctrl+X
+
+# 権限設定
+sudo chown -R pi:pi /mnt/usb_backup
+
+# テスト
+sudo umount /mnt/usb_backup
+sudo mount -a
+ls /mnt/usb_backup
+```
+
+---
+
+### ✅ 3. アプリケーション配置
+
+**方法A: GitHubからクローン**
+```bash
+cd /home/pi
+git clone https://github.com/あなたのアカウント/ecm.git
+```
+
+**方法B: SCPで転送**
+```bash
+# Windows側（PowerShell）で実行
+scp -r C:\Users\yagin\Desktop\ecm pi@ラズパイのIP:/home/pi/
+```
+
+---
+
+### ✅ 4. Python環境構築
+
+```bash
+cd /home/pi/ecm/backend
+
+# 仮想環境作成
+python3 -m venv venv
+
+# 有効化
+source venv/bin/activate
+
+# パッケージインストール
+pip install -r requirements.txt
+
+# Gunicornインストール確認
+pip install gunicorn
+```
+
+---
+
+### ✅ 5. 設定ファイル確認
+
+```bash
+# 設定ファイルを確認
+nano /home/pi/ecm/backend/scripts/system_config.py
+
+# 以下を確認:
+# - APP_DIR: /home/pi/ecm/backend
+# - BACKUP_DIR: /mnt/usb_backup/ecm
+# - メール設定が正しいか
+# - TUNNEL_URLは後で設定するので一旦スキップ
+```
+
+---
+
+### ✅ 6. 動作テスト（Gunicorn）
+
+```bash
+cd /home/pi/ecm/backend
+source venv/bin/activate
+
+# Gunicorn起動テスト
+gunicorn main:app -w 3 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000
+
+# 別のターミナルで確認
+curl http://localhost:8000
+
+# 正常なら Ctrl+C で停止
+```
+
+---
+
+### ✅ 7. systemdサービス登録
+
+```bash
+# サービスファイルをコピー
+sudo cp /home/pi/ecm/backend/systemd/*.service /etc/systemd/system/
+sudo cp /home/pi/ecm/backend/systemd/*.timer /etc/systemd/system/
+
+# systemd再読み込み
+sudo systemctl daemon-reload
+
+# アプリサービス有効化・起動
+sudo systemctl enable ecm
+sudo systemctl start ecm
+
+# 状態確認
+sudo systemctl status ecm
+
+# 監視サービス有効化（Tunnel設定後に起動）
+sudo systemctl enable ecm-monitor.timer
+sudo systemctl enable ecm-disk-check.timer
+
+# 今はまだ起動しない（TUNNEL_URL未設定のため）
+```
+
+---
+
+### ✅ 8. Cloudflare Tunnel設定
+
+```bash
+# cloudflaredインストール
+wget https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-arm64.deb
+sudo dpkg -i cloudflared-linux-arm64.deb
+
+# Cloudflareにログイン
+cloudflared tunnel login
+# ブラウザが開くのでログイン
+
+# トンネル作成
+cloudflared tunnel create ecm-tunnel
+
+# 設定ファイル作成
+mkdir -p ~/.cloudflared
+nano ~/.cloudflared/config.yml
+
+# 以下を入力:
+tunnel: ecm-tunnel
+credentials-file: /home/pi/.cloudflared/<TUNNEL-ID>.json
+
+ingress:
+  - hostname: your-domain.com
+    service: http://localhost:8000
+  - service: http_status:404
+
+# 保存: Ctrl+O → Enter → Ctrl+X
+
+# DNS設定
+cloudflared tunnel route dns ecm-tunnel your-domain.com
+
+# テスト起動
+cloudflared tunnel run ecm-tunnel
+
+# 別ターミナルまたはスマホで https://your-domain.com にアクセス
+# 動作確認できたら Ctrl+C で停止
+```
+
+---
+
+### ✅ 9. Tunnel URL設定
+
+```bash
+# 設定ファイルを編集
+nano /home/pi/ecm/backend/scripts/system_config.py
+
+# TUNNEL_URLを実際のURLに変更
+TUNNEL_URL = "https://your-domain.com"
+
+# 保存: Ctrl+O → Enter → Ctrl+X
+```
+
+---
+
+### ✅ 10. 全サービス起動
+
+```bash
+# Tunnelサービス起動
+sudo systemctl enable ecm-tunnel
+sudo systemctl start ecm-tunnel
+sudo systemctl status ecm-tunnel
+
+# 監視サービス起動
+sudo systemctl start ecm-monitor.timer
+sudo systemctl start ecm-disk-check.timer
+
+# 状態確認
+sudo systemctl status ecm-monitor.timer
+sudo systemctl status ecm-disk-check.timer
+```
+
+---
+
+### ✅ 11. バックアップ設定（cron）
+
+```bash
+# crontab編集
+crontab -e
+
+# エディタ選択（nanoを選ぶ）
+
+# 最終行に以下を追加:
+0 3 * * * /usr/bin/python3 /home/pi/ecm/backend/scripts/backup.py >> /var/log/ecm_backup.log 2>&1
+
+# 保存: Ctrl+O → Enter → Ctrl+X
+
+# 設定確認
+crontab -l
+```
+
+---
+
+### ✅ 12. 手動バックアップテスト
+
+```bash
+cd /home/pi/ecm/backend/scripts
+
+# バックアップ実行
+python3 backup.py
+
+# 確認
+ls -lh /mnt/usb_backup/ecm/
+```
+
+---
+
+### ✅ 13. メール通知テスト
+
+```bash
+cd /home/pi/ecm/backend/scripts
+
+# テストメール送信
+python3 send_email.py
+
+# 通知先メールアドレスに届くか確認
+```
+
+---
+
+### ✅ 14. 監視スクリプトテスト
+
+```bash
+cd /home/pi/ecm/backend/scripts
+
+# Tunnel監視テスト
+python3 monitor_tunnel.py
+
+# ディスク容量チェックテスト
+python3 check_disk.py
+```
+
+---
+
+## 🎉 最終確認
+
+### ✅ 動作確認チェックリスト
+
+- [ ] ローカルアクセス OK: `curl http://localhost:8000`
+- [ ] 外部アクセス OK: スマホで `https://your-domain.com`
+- [ ] ログイン成功
+- [ ] データ登録・編集できる
+- [ ] メール通知が届く
+- [ ] バックアップが作成される
+
+### ✅ サービス起動確認
+
+```bash
+# 全サービスの状態確認
+sudo systemctl status ecm
+sudo systemctl status ecm-tunnel
+sudo systemctl status ecm-monitor.timer
+sudo systemctl status ecm-disk-check.timer
+
+# タイマーの次回実行時刻確認
+sudo systemctl list-timers
+```
+
+### ✅ ログ確認
+
+```bash
+# アプリログ
+sudo journalctl -u ecm -n 50
+
+# Tunnelログ
+sudo journalctl -u ecm-tunnel -n 50
+
+# バックアップログ
+cat /var/log/ecm_backup.log
+```
+
+---
+
+## 🔄 予備機のセットアップ
+
+予備ラズパイも同じ手順でセットアップしておくと安心です。
+
+**違いは:**
+- バックアップからDBを復旧する
+- Cloudflare Tunnelは同じ設定を使う
+
+**手順:**
+1. ✅ 1 〜 ✅ 7 まで同じ
+2. `python3 restore.py` でバックアップから復旧
+3. ✅ 8 以降を実施
+
+---
+
+## 📝 運用開始後のメンテナンス
+
+### 毎週
+
+- バックアップ確認: `ls -lh /mnt/usb_backup/ecm/`
+- ディスク容量確認: `df -h`
+
+### 毎月
+
+- システムアップデート: `sudo apt update && sudo apt upgrade`
+- 復旧テスト: 予備機でバックアップから復旧
+
+### 年1回
+
+- USBドライブの健康チェック
+- ラズパイのSDカードバックアップ
+
+---
+
+## 🚨 トラブル時の連絡先
+
+| 項目 | 情報 |
+|------|------|
+| 管理者 | あなたの連絡先 |
+| 復旧手順書 | /home/pi/ecm/backend/docs/recovery.md |
+| バックアップ場所 | /mnt/usb_backup/ecm/ |
+
+---
+
+**お疲れ様でした！🎉**

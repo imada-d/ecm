@@ -1,0 +1,14 @@
+[Unit]
+Description=ECM Disk Space Check
+After=network.target
+
+[Service]
+Type=oneshot
+User=pi
+Group=pi
+WorkingDirectory=/home/pi/ecm/backend/scripts
+ExecStart=/usr/bin/python3 /home/pi/ecm/backend/scripts/check_disk.py
+
+# ログ設定
+StandardOutput=journal
+StandardError=journal

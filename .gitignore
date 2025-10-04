@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+
+# データベース（重要！）
+*.db
+*.db-wal
+*.db-shm
+data/
+
+# 機密情報（重要！）
+scripts/system_config.py
+.env
+
+# ログ
+*.log
+
+# OS
+.DS_Store
+Thumbs.db

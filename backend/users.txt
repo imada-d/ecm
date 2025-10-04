@@ -1,0 +1,5 @@
+# ユーザーリスト (メール,パスワード,名前,role)
+admin@example.com,admin123,管理者,admin
+user1@example.com,pass123,山田太郎,user
+user2@example.com,pass456,鈴木花子,user
+electric@example.com,elec789,電気工事部,admin
