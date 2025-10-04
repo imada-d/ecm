@@ -187,31 +187,6 @@ def delete_company(
     
     return {"message": f"Company '{company_name}' (ID: {company_id}) completely deleted"}
 
-@router.post("/companies/{company_id}/backup")
-def backup_company(
-    company_id: int,
-    current_admin = Depends(get_current_super_admin)
-):
-    """会社DBをバックアップ"""
-    db_path = f"./data/company_{company_id}.db"
-    if not os.path.exists(db_path):
-        raise HTTPException(status_code=404, detail="Company DB not found")
-    
-    # バックアップフォルダ作成
-    os.makedirs(f"./backups/company_{company_id}", exist_ok=True)
-    
-    # ファイルコピー
-    backup_path = f"./backups/company_{company_id}/backup_{datetime.now().strftime('%Y%m%d_%H%M%S')}.db"
-    shutil.copy2(db_path, backup_path)
-    
-    # バックアップサイズ
-    size_mb = os.path.getsize(backup_path) / 1024 / 1024
-    
-    return {
-        "backup_path": backup_path,
-        "size_mb": round(size_mb, 2),
-        "timestamp": datetime.now().isoformat()
-    }
 
 @router.get("/stats")
 def get_system_stats(
@@ -268,61 +243,48 @@ def get_system_stats(
 
 @router.get("/backups")
 def get_all_backups(
-    db: Session = Depends(get_master_db),
     current_admin = Depends(get_current_super_admin)
 ):
-    """全バックアップ一覧取得"""
+    """自動バックアップ一覧取得"""
+    import sys
+    sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'scripts'))
+    import system_config as config
+    
     backups = []
     
     # backupsフォルダを探索
-    backup_base = "./backups"
-    if os.path.exists(backup_base):
-        for company_folder in os.listdir(backup_base):
-            if company_folder.startswith("company_"):
-                company_id = int(company_folder.split("_")[1])
-                company_path = os.path.join(backup_base, company_folder)
+    if os.path.exists(config.BACKUP_DIR):
+        for backup_folder in os.listdir(config.BACKUP_DIR):
+            if backup_folder.startswith("backup_"):
+                backup_path = os.path.join(config.BACKUP_DIR, backup_folder)
                 
-                # 会社名を取得
-                company = db.query(Company).filter(Company.id == company_id).first()
-                company_name = company.name if company else f"削除済み会社 (ID: {company_id})"
+                if not os.path.isdir(backup_path):
+                    continue
                 
-                # バックアップファイル一覧
-                for backup_file in os.listdir(company_path):
-                    if backup_file.endswith(".db"):
-                        file_path = os.path.join(company_path, backup_file)
-                        file_stats = os.stat(file_path)
-                        
-                        backups.append({
-                            "company_id": company_id,
-                            "company_name": company_name,
-                            "filename": backup_file,
-                            "size_mb": round(file_stats.st_size / 1024 / 1024, 2),
-                            "created_at": datetime.fromtimestamp(file_stats.st_ctime).isoformat(),
-                            "path": file_path
-                        })
+                # バックアップフォルダ内のファイルサイズ計算
+                total_size = 0
+                file_count = 0
+                for root, dirs, files in os.walk(backup_path):
+                    for file in files:
+                        file_path = os.path.join(root, file)
+                        total_size += os.path.getsize(file_path)
+                        file_count += 1
+                
+                # タイムスタンプ取得
+                folder_stats = os.stat(backup_path)
+                
+                backups.append({
+                    "folder_name": backup_folder,
+                    "size_mb": round(total_size / 1024 / 1024, 2),
+                    "file_count": file_count,
+                    "created_at": datetime.fromtimestamp(folder_stats.st_ctime).isoformat(),
+                    "path": backup_path
+                })
     
     # 作成日時でソート（新しい順）
     backups.sort(key=lambda x: x["created_at"], reverse=True)
     return backups
 
-@router.delete("/backups/{company_id}/{filename}")
-def delete_backup(
-    company_id: int,
-    filename: str,
-    current_admin = Depends(get_current_super_admin)
-):
-    """バックアップファイルを削除"""
-    backup_path = f"./backups/company_{company_id}/{filename}"
-    
-    if not os.path.exists(backup_path):
-        raise HTTPException(status_code=404, detail="Backup file not found")
-    
-    os.remove(backup_path)
-    
-    # フォルダが空になったら削除
-    folder_path = f"./backups/company_{company_id}"
-    if os.path.exists(folder_path) and not os.listdir(folder_path):
-        os.rmdir(folder_path)
 
 # backend/routers/super_admin.py に追加
 

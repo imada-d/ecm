@@ -29,15 +29,20 @@ def backup_database():
     
     # バックアップディレクトリの存在確認
     if not os.path.exists(config.BACKUP_DIR):
-        log_error(f"バックアップディレクトリが存在しません: {config.BACKUP_DIR}")
-        log_error("USBドライブがマウントされているか確認してください")
-        
-        # メール通知
-        send_alert_email(
-            "❌ バックアップ失敗",
-            f"バックアップディレクトリが見つかりません。\n\nパス: {config.BACKUP_DIR}\n\nUSBドライブを確認してください。"
-        )
-        return False
+        # 開発環境では自動作成、本番環境ではエラー
+        if config.ENVIRONMENT == 'development':
+            log_info(f"バックアップディレクトリを作成: {config.BACKUP_DIR}")
+            os.makedirs(config.BACKUP_DIR, exist_ok=True)
+        else:
+            log_error(f"バックアップディレクトリが存在しません: {config.BACKUP_DIR}")
+            log_error("USBドライブがマウントされているか確認してください")
+            
+            # メール通知
+            send_alert_email(
+                "❌ バックアップ失敗",
+                f"バックアップディレクトリが見つかりません。\n\nパス: {config.BACKUP_DIR}\n\nUSBドライブを確認してください。"
+            )
+            return False
     
     # タイムスタンプ付きバックアップフォルダ作成
     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')

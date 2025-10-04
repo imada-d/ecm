@@ -124,31 +124,8 @@ function SuperAdminDashboard() {
         }
     };
 
-    const backupCompany = async (companyId, companyName) => {
-        if (confirm(`${companyName}のバックアップを作成しますか？`)) {
-        try {
-            const api = getApi(); // 🔥 追加
-            const res = await api.post(`/companies/${companyId}/backup`);
-            alert(`バックアップ完了\nサイズ: ${res.data.size_mb}MB`);
-            fetchData();
-        } catch (error) {
-            alert('バックアップに失敗しました');
-        }
-        }
-    };
 
-    const deleteBackup = async (companyId, fileName) => {
-        if (confirm('このバックアップを削除しますか？')) {
-        try {
-            const api = getApi(); // 🔥 追加
-            await api.delete(`/backups/${companyId}/${fileName}`);
-            alert('バックアップを削除しました');
-            fetchData();
-        } catch (error) {
-            alert('削除に失敗しました');
-        }
-        }
-    };
+
     
     const resetUserPassword = async (userId, username, name) => {
       const newPassword = prompt(`${name}（${username}）の新しいパスワードを入力してください:`, 'password123');
@@ -505,12 +482,6 @@ function SuperAdminDashboard() {
                       プラン変更
                     </button>
                     <button
-                      onClick={() => backupCompany(company.id, company.name)}
-                      className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm"
-                    >
-                      <Download className="w-4 h-4" />
-                    </button>
-                    <button
                       onClick={() => deleteCompany(company.id, company.name)}
                       className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm"
                     >
@@ -565,18 +536,17 @@ function SuperAdminDashboard() {
                 <div key={index} className="bg-gray-800 rounded-lg p-4">
                   <div className="flex justify-between items-center">
                     <div>
-                      <p className="text-white font-medium">{backup.company_name}</p>
-                      <p className="text-sm text-gray-400">{backup.file_name}</p>
+                      <p className="text-white font-medium">📦 {backup.folder_name}</p>
+                      <p className="text-sm text-gray-400">
+                        ファイル数: {backup.file_count}個 | サイズ: {backup.size_mb}MB
+                      </p>
                       <p className="text-xs text-gray-500">
-                        {backup.size_mb}MB - {new Date(backup.created_at).toLocaleString('ja-JP')}
+                        作成日時: {new Date(backup.created_at).toLocaleString('ja-JP')}
                       </p>
                     </div>
-                    <button
-                      onClick={() => deleteBackup(backup.company_id, backup.file_name)}
-                      className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    <div className="text-sm text-gray-400">
+                      自動バックアップ
+                    </div>
                   </div>
                 </div>
               ))
