@@ -2,11 +2,7 @@
 import { useState } from 'react';
 import axios from 'axios';
 import { Shield } from 'lucide-react';
-
-// 環境に応じてAPIのベースURLを自動切り替え
-const API_BASE_URL = window.location.hostname === 'localhost'
-  ? 'http://localhost:8000'
-  : `http://${window.location.hostname}:8000`;
+import { API_BASE_URL } from '../api/client';
 
 function SuperAdminLogin({ onLogin }) {
   const [username, setUsername] = useState('');

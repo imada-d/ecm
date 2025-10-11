@@ -1,6 +1,7 @@
 // frontend/src/pages/Login.jsx
 import { useState, useEffect } from 'react';
 import axios from 'axios';
+import { API_BASE_URL } from '../api/client';
 
 function Login({ onLogin }) {
   const [companyCode, setCompanyCode] = useState('');
@@ -13,7 +14,7 @@ function Login({ onLogin }) {
     setError('');
     
     try {
-      const response = await axios.post('http://localhost:8000/api/auth/login', {
+      const response = await axios.post(`${API_BASE_URL}/api/auth/login`, {
         company_code: companyCode,
         username: username,
         password: password

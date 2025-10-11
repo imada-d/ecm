@@ -1,6 +1,7 @@
 // frontend/src/pages/Register.jsx
 import { useState } from 'react';
 import axios from 'axios';
+import { API_BASE_URL } from '../api/client';
 
 function Register({ onRegisterSuccess }) {
   const [formData, setFormData] = useState({
@@ -14,7 +15,7 @@ function Register({ onRegisterSuccess }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.post('http://localhost:8000/api/auth/company-register', {
+      const response = await axios.post(`${API_BASE_URL}/api/auth/company-register`, {
         company_name: formData.company_name,
         email: formData.email,
         admin_username: formData.username,

@@ -1,6 +1,7 @@
 // frontend/src/pages/SuperAdminDashboard.jsx - スーパー管理者ダッシュボード
 import { useState, useEffect } from 'react';
 import axios from 'axios';
+import { API_BASE_URL } from '../api/client';
 import { 
   Shield, Users, Building, Database, Trash2, 
   Download, Activity, HardDrive, LogOut,
@@ -28,7 +29,7 @@ function SuperAdminDashboard() {
   // 🔥 apiインスタンスを削除して、関数に変更
   const getApi = () => {
     return axios.create({
-      baseURL: 'http://localhost:8000/api/super',
+      baseURL: `${API_BASE_URL}/api/super`,
       headers: {
         'Authorization': `Bearer ${localStorage.getItem('super_token')}`
       }
