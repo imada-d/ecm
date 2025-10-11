@@ -1,0 +1,26 @@
+[Unit]
+Description=ECM Cost Management System
+After=network.target
+
+[Service]
+Type=notify
+User=pi
+Group=pi
+WorkingDirectory=/home/pi/ecm/backend
+Environment="PATH=/home/pi/ecm/backend/venv/bin"
+ExecStart=/home/pi/ecm/backend/venv/bin/gunicorn main:app -w 3 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000
+
+# 自動再起動設定
+Restart=always
+RestartSec=5
+
+# タイムアウト設定
+TimeoutStartSec=60
+TimeoutStopSec=30
+
+# ログ設定
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

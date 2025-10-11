@@ -1,0 +1,14 @@
+[Unit]
+Description=ECM Cloudflare Tunnel Monitor
+After=network.target ecm-tunnel.service
+
+[Service]
+Type=oneshot
+User=pi
+Group=pi
+WorkingDirectory=/home/pi/ecm/backend/scripts
+ExecStart=/usr/bin/python3 /home/pi/ecm/backend/scripts/monitor_tunnel.py
+
+# ログ設定
+StandardOutput=journal
+StandardError=journal

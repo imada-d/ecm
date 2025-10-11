@@ -1,0 +1,14 @@
+[Unit]
+Description=ECM Disk Check Timer (Daily at 4:00 AM)
+Requires=ecm-disk-check.service
+
+[Timer]
+# 毎日午前4時に実行
+OnCalendar=daily
+OnCalendar=*-*-* 04:00:00
+
+# 起動時に実行を逃していたら即座に実行
+Persistent=true
+
+[Install]
+WantedBy=timers.target

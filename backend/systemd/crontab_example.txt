@@ -1,0 +1,6 @@
+# ECMバックアップ設定
+# ラズパイで以下のコマンドを実行してcronに登録:
+# crontab -e
+
+# 毎日午前3時にバックアップ実行
+0 3 * * * /usr/bin/python3 /home/pi/ecm/backend/scripts/backup.py >> /var/log/ecm_backup.log 2>&1
