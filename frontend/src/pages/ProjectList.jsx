@@ -255,11 +255,14 @@ function ProjectList() {
   };
 
   // 編集を保存
+// 編集を保存
   const handleSaveEdit = async () => {
     try {
       const updateData = {
         ...editingProject,
-        contract_amount: editingProject.contract_amount ? parseInt(editingProject.contract_amount) : 0
+        contract_amount: editingProject.contract_amount ? parseInt(editingProject.contract_amount) : 0,
+        start_date: editingProject.start_date || null,
+        end_date: editingProject.end_date || null
       };
       
       await api.updateProject(editingProject.id, updateData);
