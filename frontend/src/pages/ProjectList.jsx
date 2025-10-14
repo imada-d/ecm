@@ -328,7 +328,7 @@ function ProjectList() {
           <h2 className="text-xl font-semibold text-gray-800">
             新規工事登録
           </h2>
-          {showNewForm ? <ChevronUp /> : <ChevronDown />}
+          {showNewForm ? <ChevronUp key="up-new" /> : <ChevronDown key="down-new" />}
         </div>
         
         {showNewForm && (
@@ -376,7 +376,7 @@ function ProjectList() {
                 onClick={() => setShowFilters(!showFilters)}
                 className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-800 mb-2"
               >
-                {showFilters ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                {showFilters ? <ChevronUp key="up-filter" className="w-4 h-4" /> : <ChevronDown key="down-filter" className="w-4 h-4" />}
                 検索・フィルター {filteredProjects.length !== projects.length && `(${filteredProjects.length}件)`}
               </button>
               
