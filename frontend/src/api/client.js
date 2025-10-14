@@ -5,7 +5,8 @@ import axios from 'axios';
 // 環境に応じてbaseURLを自動切り替え
 const baseURL = window.location.hostname === 'localhost'
   ? 'http://localhost:8000'           // 開発用PC
-  : `http://${window.location.hostname}:8000`;  // サーバー等
+  : `https://api.work-cost.com`;  // 本番環境
+
 
 const client = axios.create({
   baseURL: baseURL,
