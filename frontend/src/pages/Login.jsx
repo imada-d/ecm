@@ -36,7 +36,9 @@ function Login({ onLogin }) {
       <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-gray-900">工事原価管理</h1>
-          <p className="text-sm text-gray-600 mt-2">電気工事業向け原価管理システム</p>
+          <p className="text-sm text-gray-600 mt-2">
+          
+          </p>
         </div>
 
         <h2 className="text-xl font-semibold mb-6">ログイン</h2>
