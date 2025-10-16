@@ -26,7 +26,12 @@ def get_costs(
     db: Session = Depends(get_db),
     current_user = Depends(get_current_user)
 ):
-    query = db.query(company_models.Cost)
+    # 工事とJOINして、current_userの工事に紐付く原価のみ取得
+    query = db.query(company_models.Cost).join(
+        company_models.Project
+    ).filter(
+        company_models.Project.user_id == current_user.id
+    )
     
     if project_id:
         query = query.filter(company_models.Cost.project_id == project_id)
